@@ -1,0 +1,492 @@
+---
+title: "Final Project"
+author: "Nicholas Ilvento"
+date: "4/1/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r}
+library(readxl)
+EU_Accession_Data=read_excel("EU_Accession_Data.xlsx")
+EU_Accession_Data_Predictions=read_excel("EU_Accession_Data_Predictions.xlsx")
+```
+
+```{r}
+EU_Accession_Data$death_penalty=as.factor(EU_Accession_Data$death_penalty)
+EU_Accession_Data$abortion=as.factor(EU_Accession_Data$abortion)
+EU_Accession_Data$EFTA=as.factor(EU_Accession_Data$EFTA)
+EU_Accession_Data$NATO=as.factor(EU_Accession_Data$NATO)
+EU_Accession_Data$Yugoslavia=as.factor(EU_Accession_Data$Yugoslavia)
+EU_Accession_Data$iron_curtain=as.factor(EU_Accession_Data$iron_curtain)
+EU_Accession_Data$USSR=as.factor(EU_Accession_Data$USSR)
+EU_Accession_Data$territory_disputes=as.factor(EU_Accession_Data$territory_disputes)
+EU_Accession_Data$parliament=as.factor(EU_Accession_Data$parliament)
+EU_Accession_Data$head_of_state=as.factor(EU_Accession_Data$head_of_state)
+EU_Accession_Data$landlocked=as.factor(EU_Accession_Data$landlocked)
+contrasts(EU_Accession_Data$death_penalty)
+contrasts(EU_Accession_Data$abortion)
+contrasts(EU_Accession_Data$EFTA)
+contrasts(EU_Accession_Data$NATO)
+contrasts(EU_Accession_Data$Yugoslavia)
+contrasts(EU_Accession_Data$iron_curtain)
+contrasts(EU_Accession_Data$USSR)
+contrasts(EU_Accession_Data$territory_disputes)
+contrasts(EU_Accession_Data$parliament)
+contrasts(EU_Accession_Data$head_of_state)
+contrasts(EU_Accession_Data$landlocked)
+```
+```{r}
+cor(EU_Accession_Data[sapply(EU_Accession_Data,is.numeric)])
+```
+
+GDP_inflated_2022 and population_application 0.7727833
+global_cities and GDP_inflated_2022 0.8461324
+application_backlog and fertility_rate -0.70638301
+members_at_application and fertility_rate -0.88318632
+EU_Age and fertility_Rate -0.85119474
+
+```{r}
+plot(EU_Accession_Data$EU_age,EU_Accession_Data$length_months)
+plot(EU_Accession_Data$members_at_application,EU_Accession_Data$length_months)
+plot(EU_Accession_Data$application_backlog,EU_Accession_Data$length_months)
+plot(EU_Accession_Data$GDP_application,EU_Accession_Data$length_months)
+plot(EU_Accession_Data$GDP_inflated_2022,EU_Accession_Data$length_months) #looks like a relationship
+plot(EU_Accession_Data$inflation_application,EU_Accession_Data$length_months) #looks like a relationship
+plot(EU_Accession_Data$military_spending,EU_Accession_Data$length_months)
+```
+
+GDP_inflated_2022 and population_application 0.7727833
+global_cities and GDP_inflated_2022 0.8461324
+application_backlog and fertility_rate -0.70638301
+members_at_application and fertility_rate -0.88318632
+EU_Age and fertility_Rate -0.85119474
+
+The country's GDP inflated to 2022 and the population is highly correlated at 0.7727833 and the GDP inflated to 2022 and the number of global cities are even more highly correlated at 0.8461324. I am getting rid of population and global cities since they do not appear to have any relationship with the number of months it takes to join the European Union but the inflated GDP appears to have a relationship of sorts. Fertility rate is highly negatively correlated with application backlog, members at application, and EU Age. Getting rid of fertility rate since the other three seem to have a better relationship with application duration.
+
+```{r}
+EU_Accession_Data$GDP_inflated_2022squared=(EU_Accession_Data$GDP_inflated_2022)^2
+EU_Accession_Data$inflationsquared=(EU_Accession_Data$inflation_application)^2
+EU_Accession_Data$members_at_applicationsquared=(EU_Accession_Data$members_at_application)^2
+```
+
+```{r}
+cor(EU_Accession_Data$GDP_application,EU_Accession_Data$GDP_inflated_2022)
+```
+
+```{r}
+testmodel1=lm(length_months~.-country-application-accession-GDP_inflated_2022squared-inflationsquared-members_at_application,data=EU_Accession_Data)
+summary(testmodel1)
+```
+
+```{r}
+testmodel2=lm(length_months~.-country-application-accession-GDP_application-inflationsquared-members_at_application,data=EU_Accession_Data)
+summary(testmodel2)
+```
+
+```{r}
+model=lm(length_months~.-country-application-accession-GDP_inflated_2022-GDP_application-inflationsquared-members_at_application,data=EU_Accession_Data)
+summary(model)
+```
+Got rid of communism, it had a singularity with something.
+GDP_inflated_2022 p-value = 0.362
+GDP_application p-value = 0.582
+GDP_inflated_2022squared p-value = 0.143
+members_at_application p-value = 0.868
+members_at_applicationsquared p-value = 0.841
+
+```{r}
+library(olsrr)
+```
+
+17! = 355,687,428,096,000
+```{r,include=FALSE}
+#allpossible=ols_step_all_possible(model)
+#allpossible
+``` 
+
+```{r}
+allpossible[which.min(abs(allpossible[,7])),]
+```
+
+```{r}
+allpossiblemodel=lm(length_months~EU_age+abortion+EFTA+iron_curtain+GDP_inflated_2022squared,data=EU_Accession_Data)
+summary(allpossiblemodel)
+```
+
+```{r}
+library(MASS)
+```
+
+```{r}
+stepwise=stepAIC(model,direction="both",trace=1)
+summary(stepwise)
+```
+EU_age -- low p-value
+inflation_application
+military_spending
+abortion -- lowest p-value
+territory_dispute
+iron_curtain -- low p-value
+USSR
+GDP_inflated_2022squared -- low p-value
+
+```{r}
+stepwisemodel=lm(length_months~EU_age+inflation_application+military_spending+abortion+territory_disputes+iron_curtain+USSR+GDP_inflated_2022squared,data=EU_Accession_Data)
+summary(stepwisemodel)
+```
+
+
+```{r}
+library(leaps)
+```
+
+```{r}
+bestpossible=regsubsets(length_months~.-country-application-accession-GDP_application-GDP_inflated_2022-inflationsquared-members_at_application,data=EU_Accession_Data,nvmax=5,method="seqrep")
+summary(bestpossible)
+```
+EFTA -- came up in two
+head_of_state -- unique
+EU_age -- came up in all three
+GDP_inflated_2022squared -- came up in all three
+inflation_application -- came up in two
+
+```{r}
+bestpossiblemodel=lm(length_months~EFTA+abortion+head_of_state+EU_age+GDP_inflated_2022squared+inflation_application,data=EU_Accession_Data)
+summary(bestpossiblemodel)
+```
+
+Looks like as terms are added, the p-value, F-statistic, and adjusted R-squared value gets worse. I wanted to test just 5 variables but I also tested 4 and 6 just for comparison. All three of these models are horrible so ignore.
+
+```{r}
+plot(fitted(allpossiblemodel),resid(allpossiblemodel))
+```
+
+```{r}
+plot(fitted(stepwisemodel),resid(stepwisemodel))
+```
+
+```{r}
+sum(resid(allpossiblemodel))
+```
+
+```{r}
+sum(resid(stepwisemodel))
+```
+The residual sum is closer to 0 on the stepwise model than the all-possible model.
+
+```{r}
+plot(stepwisemodel)
+```
+
+```{r}
+summary(allpossiblemodel)
+```
+
+```{r}
+summary(stepwisemodel)
+```
+
+Terms in Common between Stepwise and All-Possible Selection
+
+EU_age - numerical - linear
+abortion - categorical
+iron_curtain - categorical
+GDP_inflated_2022squared - numerical - quadratic
+
+
+```{r}
+combinedmodel=lm(length_months~EU_age+abortion+iron_curtain+GDP_inflated_2022squared,data=EU_Accession_Data)
+summary(combinedmodel)
+```
+```{r}
+plot(fitted(combinedmodel),resid(combinedmodel))
+plot(EU_Accession_Data$EU_age,resid(combinedmodel))
+plot(EU_Accession_Data$GDP_inflated_2022squared,resid(combinedmodel))
+plot(EU_Accession_Data$GDP_inflated_2022squared,EU_Accession_Data$length_months)
+plot(EU_Accession_Data$EU_age,EU_Accession_Data$length_months)
+```
+
+
+only use the variables in common between the all-possible and stepwise
+look at two numerical variables from first all-possible model compared to residuals of the model
+maybe transformations if not linear
+then create model with transformed numerical and normal categorical variables
+
+Questions 21 April 2022
+
+I created the model of the variables in common between the stepwise and all-possible regression models
+The F-statistic and the adjusted R-squared values are both lower than the stepwise model suggestion.
+I created a residual plot for both numerical variables. Any suggestions?
+I will create a model with the transformations from the residual plots.
+If at the end of the day, the transformed model of this model with the in-common terms still has a smaller F-statistic and smaller adjusted R-squared than the stepwise, should I just use the suggested stepwise model instead?
+
+To-Do List - actually really do this
+1. Make single term model between y and x1 and x2 - graph against residuals to determine transformation
+2. Do transformation on x-variables based off of residual plots
+3. Check on interaction between variables - there is a special code for this (check notes) ***takes a long time***
+4. Predictions
+
+
+```{r}
+modelx1=lm(length_months~EU_age,data=EU_Accession_Data)
+plot(EU_Accession_Data$EU_age,resid(modelx1))
+plot(fitted(modelx1),resid(modelx1))
+```
+Plot 1 - EU_age - between 0 and 300, between 300 and 410, between 411 and 541
+Plot 2 - GDP_inflated_2022squared - between  0 and 
+```{r}
+library(dplyr)
+```
+
+```{r}
+EU_Accession_Data=arrange(EU_Accession_Data,EU_age)
+EU_Accession_Data$EU_ageW=rep(0,length(EU_Accession_Data$EU_age))
+EU_Accession_Data$EU_age
+```
+
+```{r}
+#Make sure to run above first
+mean1=mean(EU_Accession_Data$EU_age[1:6])
+sd1=sd(EU_Accession_Data$EU_age[1:6])
+mean2=mean(EU_Accession_Data$EU_age[7:11])
+sd2=sd(EU_Accession_Data$EU_age[7:11])
+mean3=mean(EU_Accession_Data$EU_age[12:22])
+sd3=sd(EU_Accession_Data$EU_age[12:22])
+```
+
+```{r}
+#make sure to run previous two above first
+(sd1^2)/mean1
+(sd2^2)/mean2
+(sd3^2)/mean3
+(sd1^2)/(mean1^2)
+(sd2^2)/(mean2^2)
+(sd3^2)/(mean3^2)
+(sd1^2)/sqrt(mean1)
+(sd2^2)/sqrt(mean2)
+(sd3^2)/sqrt(mean3)
+```
+
+Mean^2 has the most stable 3 values
+
+
+```{r}
+EU_Accession_Data$EU_ageW[1:6]=1/(mean1^2)
+EU_Accession_Data$EU_ageW[7:11]=1/(mean2^2)
+EU_Accession_Data$EU_ageW[12:22]=1/(mean3^2)
+```
+
+```{r}
+EU_Accession_Data$EU_age_Weighted=((EU_Accession_Data$EU_age)*(EU_Accession_Data$EU_ageW))
+```
+
+```{r}
+weightedmodelx1=lm(length_months~EU_age_Weighted,data=EU_Accession_Data)
+summary(modelx1)
+summary(weightedmodelx1)
+plot(EU_Accession_Data$EU_age_Weighted,resid(weightedmodelx1))
+```
+
+```{r}
+modelx2=lm(length_months~GDP_inflated_2022squared,data=EU_Accession_Data)
+plot(EU_Accession_Data$GDP_inflated_2022squared,resid(modelx2))
+plot(fitted(modelx2),resid(modelx2))
+summary(modelx2)
+```
+
+```{r}
+EU_Accession_Data=arrange(EU_Accession_Data,GDP_inflated_2022squared)
+EU_Accession_Data$GDP_inflated_2022squared_W=rep(0,length(EU_Accession_Data$GDP_inflated_2022squared))
+EU_Accession_Data$GDP_inflated_2022squared
+```
+
+```{r}
+#Make sure to run above first
+mean1=mean(EU_Accession_Data$EU_age[1:16])
+sd1=sd(EU_Accession_Data$EU_age[1:16])
+mean2=mean(EU_Accession_Data$EU_age[17:22])
+sd2=sd(EU_Accession_Data$EU_age[17:22])
+```
+
+```{r}
+#make sure to run previous two above first
+(sd1^2)/mean1
+(sd2^2)/mean2
+(sd1^2)/(mean1^2)
+(sd2^2)/(mean2^2)
+(sd1^2)/sqrt(mean1)
+(sd2^2)/sqrt(mean2)
+```
+
+Mean^2 has the most stable 2 values
+
+
+```{r}
+EU_Accession_Data$GDP_inflated_2022squared_W[1:16]=1/(mean1^2)
+EU_Accession_Data$GDP_inflated_2022squared_W[17:22]=1/(mean2^2)
+```
+
+```{r}
+EU_Accession_Data$GDP_inflated_2022squared_Weighted=((EU_Accession_Data$GDP_inflated_2022squared)*(EU_Accession_Data$GDP_inflated_2022squared_W))
+```
+
+```{r}
+weightedmodelx2=lm(length_months~GDP_inflated_2022squared_Weighted,data=EU_Accession_Data)
+summary(modelx2)
+summary(weightedmodelx2)
+plot(EU_Accession_Data$GDP_inflated_2022squared_Weighted,resid(weightedmodelx2))
+```
+```{r}
+combinedmodelweights=lm(length_months~EU_age_Weighted+GDP_inflated_2022squared_Weighted+abortion+iron_curtain,data=EU_Accession_Data)
+summary(combinedmodel)
+summary(combinedmodelweights)
+```
+
+Weights made model worse. Forget weights.
+
+```{r}
+EU_Accession_Data$abortion_numerical=rep(0,length(EU_Accession_Data$abortion))
+EU_Accession_Data$iron_curtain_numerical=rep(0,length(EU_Accession_Data$iron_curtain))
+for(i in 1:length(EU_Accession_Data$abortion)){
+  if(EU_Accession_Data$abortion[i]=="legal"){EU_Accession_Data$abortion_numerical[i]=1}
+  else EU_Accession_Data$abortion_numerical[i]=0
+}
+for(i in 1:length(EU_Accession_Data$iron_curtain)){
+  if(EU_Accession_Data$iron_curtain[i]=="yes"){EU_Accession_Data$iron_curtain_numerical[i]=1}
+  else EU_Accession_Data$iron_curtain_numerical[i]=0
+}
+```
+
+```{r}
+cor((EU_Accession_Data$EU_age*EU_Accession_Data$GDP_inflated_2022squared),EU_Accession_Data$length_months)
+cor((EU_Accession_Data$EU_age*EU_Accession_Data$abortion_numerical),EU_Accession_Data$length_months) #no
+cor((EU_Accession_Data$EU_age*EU_Accession_Data$iron_curtain_numerical),EU_Accession_Data$length_months)
+cor((EU_Accession_Data$GDP_inflated_2022squared*EU_Accession_Data$abortion_numerical),EU_Accession_Data$length_months)
+cor((EU_Accession_Data$GDP_inflated_2022squared*EU_Accession_Data$iron_curtain_numerical),EU_Accession_Data$length_months) #no
+cor((EU_Accession_Data$abortion_numerical*EU_Accession_Data$iron_curtain_numerical),EU_Accession_Data$length_months)
+```
+
+```{r}
+cor((EU_Accession_Data$abortion_numerical*EU_Accession_Data$iron_curtain_numerical*EU_Accession_Data$EU_age),EU_Accession_Data$length_months)
+cor((EU_Accession_Data$abortion_numerical*EU_Accession_Data$iron_curtain_numerical*EU_Accession_Data$GDP_inflated_2022squared),EU_Accession_Data$length_months)
+cor((EU_Accession_Data$GDP_inflated_2022squared*EU_Accession_Data$iron_curtain_numerical*EU_Accession_Data$EU_age),EU_Accession_Data$length_months)
+cor((EU_Accession_Data$GDP_inflated_2022squared*EU_Accession_Data$abortion_numerical*EU_Accession_Data$EU_age),EU_Accession_Data$length_months)
+cor((EU_Accession_Data$GDP_inflated_2022squared*EU_Accession_Data$iron_curtain_numerical*EU_Accession_Data$EU_age*EU_Accession_Data$abortion_numerical),EU_Accession_Data$length_months)
+```
+
+
+EU_age - GDP_inflated_2022squared
+EU_age - abortion
+EU_age - iron_curtain
+GDP_inflated_2022squared - abortion
+GDP_inflated_2022squared - iron_curtain
+abortion - iron_curtain
+
+```{r}
+interactionmodel1=lm(length_months~EU_age+GDP_inflated_2022squared+abortion+iron_curtain+EU_age*GDP_inflated_2022squared,data=EU_Accession_Data)
+summary(interactionmodel1)
+interactionmodel2=lm(length_months~EU_age+GDP_inflated_2022squared+abortion+iron_curtain+EU_age*GDP_inflated_2022squared*abortion,data=EU_Accession_Data)
+summary(interactionmodel2)
+interactionmodel2=lm(length_months~EU_age+GDP_inflated_2022squared+abortion+iron_curtain+EU_age*GDP_inflated_2022squared*abortion+EU_age*GDP_inflated_2022squared,data=EU_Accession_Data)
+summary(interactionmodel2)
+```
+
+```{r}
+combinedmodel=lm(length_months~EU_age+abortion+iron_curtain+GDP_inflated_2022squared,data=EU_Accession_Data)
+summary(combinedmodel)
+```
+
+```{r}
+summary(stepwisemodel)
+```
+
+```{r}
+interactionmodelstep=lm(length_months~EU_age+inflation_application+military_spending+abortion+territory_disputes+iron_curtain+USSR+GDP_inflated_2022squared+EU_age*GDP_inflated_2022squared,data=EU_Accession_Data)
+summary(interactionmodelstep)
+```
+
+```{r}
+cor(EU_Accession_Data$EU_age*EU_Accession_Data$GDP_inflated_2022squared,EU_Accession_Data$length_months)
+cor(EU_Accession_Data$EU_age*EU_Accession_Data$military_spending,EU_Accession_Data$length_months)
+cor(EU_Accession_Data$EU_age*EU_Accession_Data$inflation_application,EU_Accession_Data$length_months)
+cor(EU_Accession_Data$military_spending*EU_Accession_Data$GDP_inflated_2022squared,EU_Accession_Data$length_months)
+cor(EU_Accession_Data$military_spending*EU_Accession_Data$inflation_application,EU_Accession_Data$length_months)
+cor(EU_Accession_Data$inflation_application*EU_Accession_Data$GDP_inflated_2022squared,EU_Accession_Data$length_months)
+```
+
+```{r}
+resid(stepwisemodel)
+```
+
+
+```{r}
+plot(EU_Accession_Data$EU_age,resid(stepwisemodel))
+plot(EU_Accession_Data$GDP_inflated_2022squared,resid(stepwisemodel))
+plot(EU_Accession_Data$military_spending,resid(stepwisemodel))
+plot(EU_Accession_Data$inflation_application,resid(stepwisemodel))
+```
+
+
+```{r}
+summary(stepwisemodel)
+```
+
+```{r}
+stepwisemodelfunction=function(EU_age,inflation_application,military_spending,abortion,territory_disputes,iron_curtain,USSR,GDP_inflated_2022squared) -5.804 + 0.4419*EU_age + 80.65*inflation_application - 1110*military_spending - 140.3*abortion + 46.51*territory_disputes + 69.4*iron_curtain - 39.8*USSR + 0.0000000000000000000001954*GDP_inflated_2022squared
+```
+
+
+```{r}
+for(i in 1:length(EU_Accession_Data_Predictions$country)){
+  EU_Accession_Data_Predictions$prediction[i]=stepwisemodelfunction(EU_Accession_Data_Predictions$EU_age[i],EU_Accession_Data_Predictions$inflation_application[i],EU_Accession_Data_Predictions$military_spending[i],EU_Accession_Data_Predictions$abortion[i],EU_Accession_Data_Predictions$territory_disputes[i],EU_Accession_Data_Predictions$iron_curtain[i],EU_Accession_Data_Predictions$USSR[i],EU_Accession_Data_Predictions$GDP_inflated_2022squared[i])
+}
+```
+
+
+```{r}
+EU_Predictions=data.frame(c(EU_Accession_Data_Predictions$country),c(EU_Accession_Data_Predictions$application),c(EU_Accession_Data_Predictions$prediction))
+colnames(EU_Predictions)=c("country","application","predicted_duration")
+EU_Predictions$rounded_prediction=round(EU_Predictions$predicted_duration,digits=0)
+EU_Predictions
+```
+
+```{r}
+library(lubridate)
+```
+
+```{r}
+EU_Predictions$predicted_date=ymd(as.Date(EU_Predictions$application))%m+% months(EU_Predictions$rounded_prediction)
+```
+
+```{r}
+EU_Predictions
+```
+
+```{r}
+library(stats)
+```
+
+```{r}
+interaction.plot(x.factor=EU_Accession_Data$EU_age,trace.factor=EU_Accession_Data$abortion,response=EU_Accession_Data$length_months)
+```
+
+
+```{r}
+summary(stepwisemodel)
+```
+
+
+
+```{r}
+interactionmodel=lm(length_months~EU_age*inflation_application*military_spending*abortion*territory_disputes*iron_curtain*USSR*GDP_inflated_2022squared,data=EU_Accession_Data)
+summary(interactionmodel)
+```
+
+
+```{r}
+
+```
+
+
